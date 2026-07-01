@@ -56,6 +56,8 @@
         body[data-theme="light"] .logo { color: #1a1a17; }
         body[data-theme="light"] .color-popover { background: #fff; }
         body[data-theme="light"] #minimap { background: rgba(0,0,0,0.06); }
+        body[data-theme="light"] .context-menu { background: #fff; }
+        body[data-theme="light"] .shape-actions { background: rgba(255,255,255,0.7); }
 
         * {
             box-sizing: border-box;
@@ -254,8 +256,19 @@
             animation: dash 28s linear infinite;
         }
 
+        .connection-line.no-start-arrow-hide {}
+
         @keyframes dash {
             to { stroke-dashoffset: -1000; }
+        }
+
+        #selection-box {
+            position: fixed;
+            border: 1px solid var(--accent);
+            background: rgba(255, 122, 82, 0.1);
+            z-index: 50;
+            pointer-events: none;
+            display: none;
         }
 
         #empty-hint {
@@ -286,8 +299,8 @@
 
         .node {
             position: absolute;
-            min-width: 190px;
-            min-height: 104px;
+            min-width: 150px;
+            min-height: 90px;
             background: #18181c;
             border: 1px solid var(--panel-border);
             border-left: 3px solid var(--node-accent, var(--accent));
@@ -299,7 +312,7 @@
             flex-direction: column;
             gap: 7px;
             box-shadow: 0 12px 28px rgba(0,0,0,0.32);
-            transition: border-color 0.2s, box-shadow 0.2s, transform 0.12s;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .node:hover {
@@ -313,6 +326,51 @@
             border-left-color: var(--node-accent, var(--accent));
             box-shadow: 0 0 0 2px var(--accent-soft), 0 16px 36px rgba(0,0,0,0.45);
         }
+
+        .node.in-group {
+            box-shadow: 0 0 0 1px dashed rgba(255,255,255,0.2);
+        }
+
+        /* --- SHAPE VARIANTS (Retangulo / Elipse / Losango) --- */
+        .node.shape-rect, .node.shape-ellipse, .node.shape-diamond {
+            border: 2px solid var(--node-accent, var(--accent));
+            background: color-mix(in srgb, var(--node-accent, var(--accent)) 14%, var(--bg-color));
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px 16px;
+        }
+
+        .node.shape-rect.selected, .node.shape-ellipse.selected, .node.shape-diamond.selected {
+            box-shadow: 0 0 0 2px var(--accent-soft), 0 16px 36px rgba(0,0,0,0.45);
+        }
+
+        .node.shape-rect { border-radius: 8px; }
+        .node.shape-ellipse { border-radius: 50%; }
+        .node.shape-diamond {
+            border-radius: 4px;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        .node.shape-diamond .node-body { padding: 18% 20%; }
+        .node.shape-ellipse .node-body { padding: 10% 16%; }
+
+        .node.dashed { border-style: dashed; }
+
+        .shape-actions {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            display: flex;
+            gap: 2px;
+            background: rgba(0,0,0,0.35);
+            border-radius: 7px;
+            padding: 2px;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 5;
+        }
+
+        .node:hover .shape-actions, .node.selected .shape-actions { opacity: 1; }
 
         .node-header {
             display: flex;
@@ -389,6 +447,7 @@
             word-break: break-word;
             user-select: text;
             border-radius: var(--radius-sm);
+            width: 100%;
         }
 
         .node-body[contenteditable="true"] {
@@ -420,27 +479,29 @@
 
         .resize-handle {
             position: absolute;
-            width: 14px;
-            height: 14px;
-            right: 3px;
-            bottom: 3px;
-            cursor: se-resize;
-            opacity: 0.5;
+            width: 13px;
+            height: 13px;
+            z-index: 6;
+            opacity: 0;
+            transition: opacity 0.15s;
         }
+
+        .node:hover .resize-handle, .node.selected .resize-handle { opacity: 0.9; }
 
         .resize-handle::before {
             content: '';
             position: absolute;
-            right: 2px;
-            bottom: 2px;
             width: 8px;
             height: 8px;
-            border-right: 2px solid var(--text-muted);
-            border-bottom: 2px solid var(--text-muted);
-            border-bottom-right-radius: 3px;
+            background: var(--accent);
+            border-radius: 2px;
+            border: 1px solid var(--bg-color);
         }
 
-        .node:hover .resize-handle { opacity: 0.9; }
+        .resize-handle.dir-se { right: -5px; bottom: -5px; cursor: se-resize; }
+        .resize-handle.dir-nw { left: -5px; top: -5px; cursor: nw-resize; }
+        .resize-handle.dir-ne { right: -5px; top: -5px; cursor: ne-resize; }
+        .resize-handle.dir-sw { left: -5px; bottom: -5px; cursor: sw-resize; }
 
         .connect-dot {
             position: absolute;
@@ -471,12 +532,15 @@
             background: #1c1c21;
             border: 1px solid var(--panel-border);
             border-radius: 10px;
-            padding: 7px;
+            padding: 8px;
             display: flex;
-            gap: 6px;
+            flex-direction: column;
+            gap: 8px;
             z-index: 20;
             box-shadow: 0 10px 24px rgba(0,0,0,0.4);
         }
+
+        .color-popover-row { display: flex; gap: 6px; }
 
         .color-swatch {
             width: 18px;
@@ -489,6 +553,16 @@
 
         .color-swatch:hover { transform: scale(1.15); }
         .color-swatch.active { border-color: #fff; }
+
+        .popover-toggle {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
 
         .ui-panel {
             position: fixed;
@@ -509,6 +583,8 @@
             transform: translateX(-50%);
             align-items: center;
             padding: 7px 10px 7px 16px;
+            flex-wrap: wrap;
+            max-width: 92vw;
         }
 
         .logo {
@@ -538,6 +614,44 @@
             transform: translateY(-50%);
             flex-direction: column;
         }
+
+        #shape-bar {
+            left: 20px;
+            top: 20px;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .shape-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--panel-border);
+            color: var(--text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .shape-btn:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+        .shape-btn svg { width: 18px; height: 18px; }
+
+        #align-toolbar {
+            position: fixed;
+            top: 76px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 3px;
+            padding: 6px;
+        }
+
+        #align-toolbar.visible { display: flex; }
+
+        .align-sep { width: 1px; background: var(--panel-border); margin: 2px 3px; }
 
         #status-bar {
             bottom: 20px;
@@ -589,6 +703,12 @@
             transform: translateY(-1px);
         }
 
+        .btn.active {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
         .btn-primary {
             background: var(--accent);
             border: none;
@@ -622,14 +742,14 @@
             outline: none;
             font-size: 0.83rem;
             font-family: var(--font-body);
-            width: 140px;
+            width: 130px;
             transition: width 0.25s, border-color 0.2s;
         }
 
         .search-input::placeholder { color: var(--text-faint); }
 
         .search-input:focus {
-            width: 210px;
+            width: 190px;
             border-color: var(--accent);
         }
 
@@ -670,13 +790,11 @@
             border: 1px solid var(--panel-border);
             border-radius: var(--radius-md);
             padding: 6px;
-            min-width: 190px;
+            min-width: 200px;
             z-index: 500;
             box-shadow: 0 20px 44px rgba(0,0,0,0.5);
             font-size: 0.85rem;
         }
-
-        body[data-theme="light"] .context-menu { background: #fff; }
 
         .context-menu-item {
             display: flex;
@@ -827,10 +945,14 @@
 
     <div id="top-bar" class="ui-panel">
         <div class="logo">CHOROLLOBOARD</div>
-        <input type="text" id="search-box" class="search-input" placeholder="Pesquisar blocos...">
+        <input type="text" id="search-box" class="search-input" placeholder="Pesquisar...">
         <button class="btn" title="Exportar como JSON" onclick="actions.exportJSON()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar
+            JSON
+        </button>
+        <button class="btn" title="Exportar como SVG" onclick="actions.exportSVG()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg>
+            SVG
         </button>
         <button class="btn" title="Importar arquivo JSON" onclick="document.getElementById('import-file').click()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -843,16 +965,33 @@
         <button class="btn btn-icon" id="theme-toggle-btn" title="Alternar tema claro/escuro" onclick="actions.toggleTheme()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
+        <button class="btn btn-icon" id="snap-toggle-btn" title="Encaixar na grade" onclick="actions.toggleSnap()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </button>
         <a href="https://discord.gg/XKC7fq7N5d" target="_blank" class="btn" style="background:#5865F2; border:none; color:#fff; text-decoration:none;">
             <svg viewBox="0 0 127.14 96.36" width="14" height="14" fill="#fff">
                 <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.18,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a74.37,74.37,0,0,0,6.71-11A68.6,68.6,0,0,1,28.41,79.9c.85-.63,1.69-1.28,2.5-2a74.12,74.12,0,0,0,92.32,0c.81.67,1.65,1.32,2.5,2a68.52,68.52,0,0,1-10.27,5.5,74.75,74.75,0,0,0,6.71,11,105.73,105.73,0,0,0,31-18.83C129,50.7,122.64,27.93,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
             </svg>
-            Discord
         </a>
     </div>
 
+    <div id="shape-bar" class="ui-panel">
+        <button class="shape-btn" title="Nota (N)" onclick="actions.createNode(null,null,'rounded')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="14" y2="13"/></svg>
+        </button>
+        <button class="shape-btn" title="Retângulo" onclick="actions.createNode(null,null,'rect')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="1"/></svg>
+        </button>
+        <button class="shape-btn" title="Elipse" onclick="actions.createNode(null,null,'ellipse')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="6.5"/></svg>
+        </button>
+        <button class="shape-btn" title="Losango" onclick="actions.createNode(null,null,'diamond')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12,3 21,12 12,21 3,12"/></svg>
+        </button>
+    </div>
+
     <div id="sidebar" class="ui-panel">
-        <button class="btn btn-primary" title="Criar bloco (ou dê duplo clique no canvas)" onclick="actions.createNode()">
+        <button class="btn btn-primary" title="Criar bloco (tecla N)" onclick="actions.createNode()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Bloco
         </button>
@@ -869,16 +1008,19 @@
         </button>
     </div>
 
-    <div id="status-bar" class="ui-panel">
-        <span class="status-dot"></span>
-        <span id="node-count">0</span> blocos <span style="color: var(--text-faint); margin: 0 2px;">·</span> <span id="conn-count">0</span> conexões
-    </div>
-
-    <div id="controls-right" class="ui-panel">
-        <div id="zoom-display" style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); margin-right: 8px;">100%</div>
-        <div id="minimap">
-            <div id="minimap-view"></div>
-        </div>
+    <div id="align-toolbar" class="ui-panel">
+        <button class="btn btn-icon" title="Alinhar à esquerda" onclick="actions.align('left')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="2" x2="4" y2="22"/><rect x="7" y="5" width="12" height="5"/><rect x="7" y="14" width="7" height="5"/></svg></button>
+        <button class="btn btn-icon" title="Centralizar horizontalmente" onclick="actions.align('centerH')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><rect x="6" y="5" width="12" height="5"/><rect x="8.5" y="14" width="7" height="5"/></svg></button>
+        <button class="btn btn-icon" title="Alinhar à direita" onclick="actions.align('right')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="20" y1="2" x2="20" y2="22"/><rect x="5" y="5" width="12" height="5"/><rect x="10" y="14" width="7" height="5"/></svg></button>
+        <div class="align-sep"></div>
+        <button class="btn btn-icon" title="Alinhar ao topo" onclick="actions.align('top')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="4" x2="22" y2="4"/><rect x="5" y="7" width="5" height="12"/><rect x="14" y="7" width="5" height="7"/></svg></button>
+        <button class="btn btn-icon" title="Centralizar verticalmente" onclick="actions.align('middle')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="12" x2="22" y2="12"/><rect x="5" y="6" width="5" height="12"/><rect x="14" y="8.5" width="5" height="7"/></svg></button>
+        <button class="btn btn-icon" title="Alinhar à base" onclick="actions.align('bottom')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="20" x2="22" y2="20"/><rect x="5" y="5" width="5" height="12"/><rect x="14" y="10" width="5" height="7"/></svg></button>
+        <div class="align-sep"></div>
+        <button class="btn btn-icon" title="Distribuir horizontalmente" onclick="actions.distribute('h')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="2" x2="3" y2="22"/><line x1="21" y1="2" x2="21" y2="22"/><rect x="8" y="8" width="3" height="8"/><rect x="13" y="8" width="3" height="8"/></svg></button>
+        <button class="btn btn-icon" title="Distribuir verticalmente" onclick="actions.distribute('v')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="3" x2="22" y2="3"/><line x1="2" y1="21" x2="22" y2="21"/><rect x="8" y="8" width="8" height="3"/><rect x="8" y="13" width="8" height="3"/></svg></button>
+        <div class="align-sep"></div>
+        <button class="btn btn-icon" title="Agrupar (Ctrl+G)" onclick="actions.groupSelection()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M10 6h5a2 2 0 0 1 2 2v5"/></svg></button>
     </div>
 
     <div id="outline-panel" class="ui-panel">
@@ -891,10 +1033,24 @@
         <div id="outline-list"></div>
     </div>
 
+    <div id="status-bar" class="ui-panel">
+        <span class="status-dot"></span>
+        <span id="node-count">0</span> blocos <span style="color: var(--text-faint); margin: 0 2px;">·</span> <span id="conn-count">0</span> conexões <span id="selection-count-wrap" style="display:none;"><span style="color: var(--text-faint); margin: 0 2px;">·</span><span id="selection-count">0</span> selecionados</span>
+    </div>
+
+    <div id="controls-right" class="ui-panel">
+        <div id="zoom-display" style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); margin-right: 8px;">100%</div>
+        <div id="minimap">
+            <div id="minimap-view"></div>
+        </div>
+    </div>
+
     <div id="empty-hint">
         <div class="hint-title">Sua tela está vazia</div>
-        <div class="hint-sub">Dê duplo clique aqui, ou use "+ Bloco"</div>
+        <div class="hint-sub">Duplo clique aqui, tecla N, ou escolha uma forma</div>
     </div>
+
+    <div id="selection-box"></div>
 
     <div id="viewport">
         <div id="canvas">
@@ -902,6 +1058,9 @@
                 <defs>
                     <marker id="arrow-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                         <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--link-color)"></path>
+                    </marker>
+                    <marker id="arrow-head-start" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                        <path d="M 10 0 L 0 5 L 10 10 z" fill="var(--link-color)"></path>
                     </marker>
                 </defs>
             </svg>
@@ -973,20 +1132,26 @@
             zoom: 1,
             nodes: [],
             connections: [],
-            selectedNodeId: null,
+            selectedNodeIds: new Set(),
             isPanning: false,
             isDraggingNode: false,
             isResizingNode: false,
             isLinking: false,
+            isRubberBand: false,
             linkSourceId: null,
             draggedNodeId: null,
+            resizeDir: null,
             dragStart: { x: 0, y: 0 },
+            dragSetStart: {},
             history: [],
             historyIndex: -1,
-            openColorPopoverId: null
+            openColorPopoverId: null,
+            snapEnabled: false,
+            clipboard: []
         };
 
         const nodeColors = ['#ff7a52', '#35d4c7', '#c084fc', '#fbbf24', '#4ade80', '#f472b6'];
+        const GRID_SNAP = 20;
 
         const viewport = document.getElementById('viewport');
         const canvas = document.getElementById('canvas');
@@ -996,6 +1161,9 @@
         const zoomDisplayEl = document.getElementById('zoom-display');
         const searchBox = document.getElementById('search-box');
         const emptyHint = document.getElementById('empty-hint');
+        const selectionBox = document.getElementById('selection-box');
+        const alignToolbar = document.getElementById('align-toolbar');
+        const snapBtn = document.getElementById('snap-toggle-btn');
 
         function init() {
             state.panX = window.innerWidth / 2;
@@ -1010,6 +1178,10 @@
             saveHistory();
             renderConnections();
             updateMetrics();
+        }
+
+        function snap(v) {
+            return state.snapEnabled ? Math.round(v / GRID_SNAP) * GRID_SNAP : v;
         }
 
         function updateTransform() {
@@ -1028,7 +1200,7 @@
         }
 
         const actions = {
-            createNode(x = null, y = null) {
+            createNode(x = null, y = null, shape = 'rounded') {
                 if (x === null || y === null) {
                     x = (window.innerWidth / 2 - state.panX) / state.zoom;
                     y = (window.innerHeight / 2 - state.panY) / state.zoom;
@@ -1037,36 +1209,88 @@
                 const node = {
                     id: 'node_' + Date.now() + Math.random().toString(36).substr(2, 5),
                     title: 'Ideia',
-                    content: 'Dê duplo clique para editar...',
-                    x: x,
-                    y: y,
-                    width: 220,
-                    height: 120,
-                    color: nodeColors[state.nodes.length % nodeColors.length]
+                    content: shape === 'rounded' ? 'Dê duplo clique para editar...' : 'Texto',
+                    x: snap(x),
+                    y: snap(y),
+                    width: shape === 'rounded' ? 220 : 150,
+                    height: shape === 'rounded' ? 120 : 100,
+                    color: nodeColors[state.nodes.length % nodeColors.length],
+                    shape: shape,
+                    dashed: false,
+                    groupId: null
                 };
 
                 state.nodes.push(node);
                 dom.renderNode(node);
+                setSelection([node.id]);
                 saveHistory();
                 updateMetrics();
             },
 
             deleteNode(id) {
-                state.nodes = state.nodes.filter(n => n.id !== id);
-                state.connections = state.connections.filter(c => c.from !== id && c.to !== id);
-                const el = document.getElementById(id);
-                if (el) el.remove();
-                if (state.selectedNodeId === id) state.selectedNodeId = null;
+                actions.deleteNodes([id]);
+            },
+
+            deleteNodes(ids) {
+                const idSet = new Set(ids);
+                state.nodes = state.nodes.filter(n => !idSet.has(n.id));
+                state.connections = state.connections.filter(c => !idSet.has(c.from) && !idSet.has(c.to));
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.remove();
+                    state.selectedNodeIds.delete(id);
+                });
                 renderConnections();
                 saveHistory();
                 updateMetrics();
+                updateAlignToolbar();
+            },
+
+            deleteSelection() {
+                if (state.selectedNodeIds.size > 0) actions.deleteNodes([...state.selectedNodeIds]);
             },
 
             duplicateNode(id) {
                 const target = state.nodes.find(n => n.id === id);
                 if (target) {
-                    actions.createNode(target.x + 30, target.y + 30);
+                    actions.createNode(target.x + 30, target.y + 30, target.shape);
+                    const newest = state.nodes[state.nodes.length - 1];
+                    newest.content = target.content;
+                    newest.title = target.title;
+                    newest.color = target.color;
+                    newest.width = target.width;
+                    newest.height = target.height;
+                    dom.clearAllNodes();
+                    state.nodes.forEach(n => dom.renderNode(n));
+                    saveHistory();
                 }
+            },
+
+            copySelection() {
+                if (state.selectedNodeIds.size === 0) return;
+                state.clipboard = state.nodes.filter(n => state.selectedNodeIds.has(n.id)).map(n => ({...n}));
+            },
+
+            pasteClipboard() {
+                if (state.clipboard.length === 0) return;
+                const idMap = {};
+                const newIds = [];
+                state.clipboard.forEach(src => {
+                    const newNode = {
+                        ...src,
+                        id: 'node_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                        x: src.x + 30,
+                        y: src.y + 30,
+                        groupId: src.groupId
+                    };
+                    idMap[src.id] = newNode.id;
+                    state.nodes.push(newNode);
+                    dom.renderNode(newNode);
+                    newIds.push(newNode.id);
+                });
+                setSelection(newIds);
+                saveHistory();
+                updateMetrics();
             },
 
             toggleColorPicker(id, event) {
@@ -1081,6 +1305,9 @@
                 const btn = event.currentTarget;
                 const popover = document.createElement('div');
                 popover.className = 'color-popover';
+
+                const swatchRow = document.createElement('div');
+                swatchRow.className = 'color-popover-row';
                 nodeColors.forEach(c => {
                     const sw = document.createElement('div');
                     sw.className = 'color-swatch' + (c === node.color ? ' active' : '');
@@ -1090,12 +1317,24 @@
                         node.color = c;
                         const el = document.getElementById(id);
                         el.style.setProperty('--node-accent', c);
-                        popover.remove();
-                        state.openColorPopoverId = null;
+                        popover.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                        sw.classList.add('active');
                         saveHistory();
                     };
-                    popover.appendChild(sw);
+                    swatchRow.appendChild(sw);
                 });
+                popover.appendChild(swatchRow);
+
+                const dashToggle = document.createElement('div');
+                dashToggle.className = 'popover-toggle';
+                dashToggle.innerHTML = `<input type="checkbox" ${node.dashed ? 'checked' : ''}> Borda tracejada`;
+                dashToggle.querySelector('input').addEventListener('change', (e) => {
+                    node.dashed = e.target.checked;
+                    document.getElementById(id).classList.toggle('dashed', node.dashed);
+                    saveHistory();
+                });
+                popover.appendChild(dashToggle);
+
                 btn.parentElement.parentElement.appendChild(popover);
             },
 
@@ -1103,6 +1342,11 @@
                 const isLight = document.body.getAttribute('data-theme') === 'light';
                 document.body.setAttribute('data-theme', isLight ? 'dark' : 'light');
                 localStorage.setItem('chorolloboard_theme', isLight ? 'dark' : 'light');
+            },
+
+            toggleSnap() {
+                state.snapEnabled = !state.snapEnabled;
+                snapBtn.classList.toggle('active', state.snapEnabled);
             },
 
             toggleOutline() {
@@ -1141,7 +1385,105 @@
                 state.panX = window.innerWidth / 2 - centerX * state.zoom;
                 state.panY = window.innerHeight / 2 - centerY * state.zoom;
                 updateTransform();
-                selectNode(id);
+                setSelection([id]);
+            },
+
+            bringToFront(id) {
+                const idx = state.nodes.findIndex(n => n.id === id);
+                if (idx === -1) return;
+                const [n] = state.nodes.splice(idx, 1);
+                state.nodes.push(n);
+                dom.clearAllNodes();
+                state.nodes.forEach(nn => dom.renderNode(nn));
+                syncSelectionClasses();
+                saveHistory();
+            },
+
+            sendToBack(id) {
+                const idx = state.nodes.findIndex(n => n.id === id);
+                if (idx === -1) return;
+                const [n] = state.nodes.splice(idx, 1);
+                state.nodes.unshift(n);
+                dom.clearAllNodes();
+                state.nodes.forEach(nn => dom.renderNode(nn));
+                syncSelectionClasses();
+                saveHistory();
+            },
+
+            groupSelection() {
+                if (state.selectedNodeIds.size < 2) return;
+                const gid = 'group_' + Date.now();
+                state.nodes.forEach(n => {
+                    if (state.selectedNodeIds.has(n.id)) n.groupId = gid;
+                });
+                document.querySelectorAll('.node').forEach(el => {
+                    if (state.selectedNodeIds.has(el.id)) el.classList.add('in-group');
+                });
+                saveHistory();
+            },
+
+            ungroupSelection() {
+                state.nodes.forEach(n => {
+                    if (state.selectedNodeIds.has(n.id)) n.groupId = null;
+                });
+                document.querySelectorAll('.node').forEach(el => el.classList.remove('in-group'));
+                saveHistory();
+            },
+
+            align(mode) {
+                const sel = state.nodes.filter(n => state.selectedNodeIds.has(n.id));
+                if (sel.length < 2) return;
+                const minX = Math.min(...sel.map(n => n.x));
+                const maxX = Math.max(...sel.map(n => n.x + n.width));
+                const minY = Math.min(...sel.map(n => n.y));
+                const maxY = Math.max(...sel.map(n => n.y + n.height));
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+
+                sel.forEach(n => {
+                    if (mode === 'left') n.x = minX;
+                    if (mode === 'right') n.x = maxX - n.width;
+                    if (mode === 'centerH') n.x = centerX - n.width / 2;
+                    if (mode === 'top') n.y = minY;
+                    if (mode === 'bottom') n.y = maxY - n.height;
+                    if (mode === 'middle') n.y = centerY - n.height / 2;
+                });
+                sel.forEach(n => dom.updateNodePosition(n));
+                renderConnections();
+                updateMinimap();
+                saveHistory();
+            },
+
+            distribute(axis) {
+                const sel = state.nodes.filter(n => state.selectedNodeIds.has(n.id));
+                if (sel.length < 3) return;
+                if (axis === 'h') {
+                    sel.sort((a, b) => a.x - b.x);
+                    const first = sel[0], last = sel[sel.length - 1];
+                    const span = (last.x + last.width) - first.x;
+                    const totalW = sel.reduce((s, n) => s + n.width, 0);
+                    const gap = (span - totalW) / (sel.length - 1);
+                    let cursor = first.x;
+                    sel.forEach(n => {
+                        n.x = cursor;
+                        cursor += n.width + gap;
+                    });
+                } else {
+                    sel.sort((a, b) => a.y - b.y);
+                    const first = sel[0], last = sel[sel.length - 1];
+                    const span = (last.y + last.height) - first.y;
+                    const totalH = sel.reduce((s, n) => s + n.height, 0);
+                    const gap = (span - totalH) / (sel.length - 1);
+                    let cursor = first.y;
+                    sel.forEach(n => {
+                        n.y = cursor;
+                        cursor += n.height + gap;
+                    });
+                }
+                sel.forEach(n => dom.updateNodePosition(n));
+                renderConnections();
+                updateMinimap();
+                saveHistory();
             },
 
             undo() {
@@ -1168,6 +1510,60 @@
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
                 downloadAnchor.remove();
+            },
+
+            exportSVG() {
+                if (state.nodes.length === 0) { alert('Não há blocos para exportar.'); return; }
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                state.nodes.forEach(n => {
+                    minX = Math.min(minX, n.x);
+                    minY = Math.min(minY, n.y);
+                    maxX = Math.max(maxX, n.x + n.width);
+                    maxY = Math.max(maxY, n.y + n.height);
+                });
+                const pad = 60;
+                minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+                const w = maxX - minX, h = maxY - minY;
+                const esc = (s) => (s || '').replace(/<[^>]*>/g, ' ').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+                let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" font-family="Inter, sans-serif">`;
+                svg += `<rect x="0" y="0" width="${w}" height="${h}" fill="#0b0b0d"/>`;
+
+                state.connections.forEach(conn => {
+                    const f = state.nodes.find(n => n.id === conn.from);
+                    const t = state.nodes.find(n => n.id === conn.to);
+                    if (!f || !t) return;
+                    const x1 = f.x - minX + f.width / 2, y1 = f.y - minY + f.height;
+                    const x2 = t.x - minX + t.width / 2, y2 = t.y - minY;
+                    const cy = y1 + (y2 - y1) / 2;
+                    svg += `<path d="M ${x1} ${y1} C ${x1} ${cy}, ${x2} ${cy}, ${x2} ${y2}" stroke="#35d4c7" stroke-width="2" fill="none"/>`;
+                    if (conn.label) {
+                        svg += `<text x="${(x1+x2)/2}" y="${cy}" fill="#35d4c7" font-size="11" text-anchor="middle">${esc(conn.label)}</text>`;
+                    }
+                });
+
+                state.nodes.forEach(n => {
+                    const x = n.x - minX, y = n.y - minY;
+                    const color = n.color || '#ff7a52';
+                    if (n.shape === 'ellipse') {
+                        svg += `<ellipse cx="${x + n.width/2}" cy="${y + n.height/2}" rx="${n.width/2}" ry="${n.height/2}" fill="#18181c" stroke="${color}" stroke-width="2"/>`;
+                    } else if (n.shape === 'diamond') {
+                        const cx = x + n.width/2, cy = y + n.height/2;
+                        svg += `<polygon points="${cx},${y} ${x+n.width},${cy} ${cx},${y+n.height} ${x},${cy}" fill="#18181c" stroke="${color}" stroke-width="2"/>`;
+                    } else {
+                        svg += `<rect x="${x}" y="${y}" width="${n.width}" height="${n.height}" rx="8" fill="#18181c" stroke="${color}" stroke-width="2"/>`;
+                    }
+                    svg += `<foreignObject x="${x+10}" y="${y+10}" width="${n.width-20}" height="${n.height-20}"><div xmlns="http://www.w3.org/1999/xhtml" style="color:#ece9e4;font-size:13px;line-height:1.4;word-break:break-word;">${esc(n.content)}</div></foreignObject>`;
+                });
+
+                svg += `</svg>`;
+                const dataStr = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+                const a = document.createElement('a');
+                a.setAttribute('href', dataStr);
+                a.setAttribute('download', 'chorolloboard.svg');
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
             },
 
             importJSON(event) {
@@ -1197,10 +1593,12 @@
         function restoreSnapshot(snapshot) {
             state.nodes = snapshot.nodes;
             state.connections = snapshot.connections;
+            state.selectedNodeIds.clear();
             dom.clearAllNodes();
             state.nodes.forEach(n => dom.renderNode(n));
             renderConnections();
             updateMetrics();
+            updateAlignToolbar();
             saveToLocalStorage();
         }
 
@@ -1210,9 +1608,17 @@
                 nodesElements.forEach(el => el.remove());
             },
 
+            updateNodePosition(node) {
+                const el = document.getElementById(node.id);
+                if (!el) return;
+                el.style.left = `${node.x + 50000}px`;
+                el.style.top = `${node.y + 50000}px`;
+            },
+
             renderNode(node) {
+                node.shape = node.shape || 'rounded';
                 const div = document.createElement('div');
-                div.className = 'node';
+                div.className = 'node shape-' + node.shape + (node.dashed ? ' dashed' : '') + (node.groupId ? ' in-group' : '');
                 div.id = node.id;
                 div.style.left = `${node.x + 50000}px`;
                 div.style.top = `${node.y + 50000}px`;
@@ -1220,34 +1626,50 @@
                 div.style.height = `${node.height}px`;
                 div.style.setProperty('--node-accent', node.color || '#ff7a52');
 
-                if(state.selectedNodeId === node.id) div.classList.add('selected');
+                if (state.selectedNodeIds.has(node.id)) div.classList.add('selected');
 
-                div.innerHTML = `
-                    <div class="node-header">
-                        <span class="node-title" contenteditable="false">${node.title || 'Ideia'}</span>
-                        <div class="node-actions">
-                            <button class="node-btn" title="Cor" onclick="actions.toggleColorPicker('${node.id}', event)">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-                            </button>
-                            <button class="node-btn" title="Duplicar" onclick="actions.duplicateNode('${node.id}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                            </button>
-                            <button class="node-btn danger" title="Excluir" onclick="actions.deleteNode('${node.id}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            </button>
+                const actionsHtml = `
+                    <button class="node-btn" title="Cor / estilo" onclick="actions.toggleColorPicker('${node.id}', event)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                    </button>
+                    <button class="node-btn" title="Duplicar" onclick="actions.duplicateNode('${node.id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    <button class="node-btn danger" title="Excluir" onclick="actions.deleteNode('${node.id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>`;
+
+                if (node.shape === 'rounded') {
+                    div.innerHTML = `
+                        <div class="node-header">
+                            <span class="node-title" contenteditable="false">${node.title || 'Ideia'}</span>
+                            <div class="node-actions">${actionsHtml}</div>
                         </div>
-                    </div>
-                    <div class="node-body" contenteditable="false">${node.content}</div>
-                    <div class="connect-dot" data-id="${node.id}" title="Arraste para conectar"></div>
-                    <div class="resize-handle"></div>
-                `;
+                        <div class="node-body" contenteditable="false">${node.content}</div>
+                        <div class="connect-dot" data-id="${node.id}" title="Arraste para conectar"></div>
+                        <div class="resize-handle dir-se"></div>
+                        <div class="resize-handle dir-nw"></div>
+                        <div class="resize-handle dir-ne"></div>
+                        <div class="resize-handle dir-sw"></div>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <div class="shape-actions">${actionsHtml}</div>
+                        <div class="node-body" contenteditable="false">${node.content}</div>
+                        <div class="connect-dot" data-id="${node.id}" title="Arraste para conectar"></div>
+                        <div class="resize-handle dir-se"></div>
+                        <div class="resize-handle dir-nw"></div>
+                        <div class="resize-handle dir-ne"></div>
+                        <div class="resize-handle dir-sw"></div>
+                    `;
+                }
 
                 const body = div.querySelector('.node-body');
                 const title = div.querySelector('.node-title');
 
                 div.addEventListener('dblclick', (e) => {
                     if(e.target.classList.contains('node-btn') || e.target.closest('.node-btn')) return;
-                    if (e.target === title) {
+                    if (title && e.target === title) {
                         title.contentEditable = "true";
                         title.focus();
                         return;
@@ -1264,19 +1686,21 @@
                     }
                 });
 
-                title.addEventListener('blur', () => {
-                    title.contentEditable = "false";
-                    const newTitle = title.textContent.trim() || 'Ideia';
-                    if (node.title !== newTitle) {
-                        node.title = newTitle;
-                        title.textContent = newTitle;
-                        saveHistory();
-                    }
-                });
+                if (title) {
+                    title.addEventListener('blur', () => {
+                        title.contentEditable = "false";
+                        const newTitle = title.textContent.trim() || 'Ideia';
+                        if (node.title !== newTitle) {
+                            node.title = newTitle;
+                            title.textContent = newTitle;
+                            saveHistory();
+                        }
+                    });
 
-                title.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); title.blur(); }
-                });
+                    title.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); title.blur(); }
+                    });
+                }
 
                 body.addEventListener('keydown', (e) => {
                     if (e.key === ' ' || e.key === 'Spacebar') return;
@@ -1308,7 +1732,7 @@
         function renderConnections() {
             svgCanvas.querySelectorAll('.connection-line, .connection-label, .connection-label-bg, .connection-hit').forEach(el => el.remove());
 
-            state.connections.forEach((conn, idx) => {
+            state.connections.forEach((conn) => {
                 const fromNode = state.nodes.find(n => n.id === conn.from);
                 const toNode = state.nodes.find(n => n.id === conn.to);
 
@@ -1324,10 +1748,10 @@
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("d", pathData);
                     path.setAttribute("class", "connection-line");
-                    path.setAttribute("marker-end", "url(#arrow-head)");
+                    if (conn.arrowEnd !== false) path.setAttribute("marker-end", "url(#arrow-head)");
+                    if (conn.arrowStart) path.setAttribute("marker-start", "url(#arrow-head-start)");
                     svgCanvas.appendChild(path);
 
-                    // wider invisible hit area so it's easy to click for labeling
                     const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     hit.setAttribute("d", pathData);
                     hit.setAttribute("class", "connection-hit");
@@ -1343,6 +1767,28 @@
                             renderConnections();
                             saveHistory();
                         }
+                    });
+                    hit.addEventListener("contextmenu", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showContextMenu(e.clientX, e.clientY, [
+                            { icon: icons.edit, label: 'Renomear conexão', action: () => {
+                                const label = prompt("Rótulo da conexão:", conn.label || "");
+                                if (label !== null) { conn.label = label.trim(); renderConnections(); saveHistory(); }
+                            }},
+                            { icon: icons.arrow, label: conn.arrowStart ? 'Remover seta inicial' : 'Adicionar seta inicial', action: () => {
+                                conn.arrowStart = !conn.arrowStart; renderConnections(); saveHistory();
+                            }},
+                            { icon: icons.arrow, label: conn.arrowEnd === false ? 'Adicionar seta final' : 'Remover seta final', action: () => {
+                                conn.arrowEnd = conn.arrowEnd === false ? true : false; renderConnections(); saveHistory();
+                            }},
+                            'separator',
+                            { icon: icons.delete, label: 'Excluir conexão', danger: true, action: () => {
+                                state.connections = state.connections.filter(c => c !== conn);
+                                renderConnections();
+                                saveHistory();
+                            }}
+                        ]);
                     });
                     svgCanvas.appendChild(hit);
 
@@ -1372,10 +1818,23 @@
             connCountEl.textContent = state.connections.length;
         }
 
+        function getDragSet(nodeId) {
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (!node) return [nodeId];
+            if (node.groupId) {
+                return state.nodes.filter(n => n.groupId === node.groupId).map(n => n.id);
+            }
+            if (state.selectedNodeIds.has(nodeId) && state.selectedNodeIds.size > 1) {
+                return [...state.selectedNodeIds];
+            }
+            return [nodeId];
+        }
+
         function setupEventListeners() {
             viewport.addEventListener('mousedown', (e) => {
                 document.querySelectorAll('.color-popover').forEach(p => p.remove());
                 state.openColorPopoverId = null;
+                closeContextMenu();
 
                 const target = e.target;
 
@@ -1390,8 +1849,9 @@
                 if (target.classList.contains('resize-handle')) {
                     state.isResizingNode = true;
                     state.draggedNodeId = target.closest('.node').id;
+                    state.resizeDir = [...target.classList].find(c => c.startsWith('dir-')).replace('dir-', '');
                     const nodeData = state.nodes.find(n => n.id === state.draggedNodeId);
-                    state.dragStart = { x: e.clientX, y: e.clientY, w: nodeData.width, h: nodeData.height };
+                    state.dragStart = { x: e.clientX, y: e.clientY, w: nodeData.width, h: nodeData.height, nx: nodeData.x, ny: nodeData.y };
                     e.stopPropagation();
                     e.preventDefault();
                     return;
@@ -1399,20 +1859,45 @@
 
                 const nodeEl = target.closest('.node');
                 if (nodeEl && !target.classList.contains('node-btn') && !target.closest('.node-btn') && target.getAttribute('contenteditable') !== 'true') {
+                    if (e.shiftKey) {
+                        toggleNodeSelection(nodeEl.id);
+                        e.stopPropagation();
+                        return;
+                    }
+
+                    if (!state.selectedNodeIds.has(nodeEl.id)) {
+                        setSelection([nodeEl.id]);
+                    }
+
                     state.isDraggingNode = true;
                     state.draggedNodeId = nodeEl.id;
-                    selectNode(nodeEl.id);
 
-                    const nodeData = state.nodes.find(n => n.id === nodeEl.id);
-                    state.dragStart = { x: e.clientX, y: e.clientY, nx: nodeData.x, ny: nodeData.y };
+                    const dragSet = getDragSet(nodeEl.id);
+                    state.dragSetStart = {};
+                    dragSet.forEach(id => {
+                        const n = state.nodes.find(nn => nn.id === id);
+                        if (n) state.dragSetStart[id] = { x: n.x, y: n.y };
+                    });
+                    state.dragStart = { x: e.clientX, y: e.clientY };
                     e.stopPropagation();
+                    return;
+                }
+
+                if (e.shiftKey) {
+                    state.isRubberBand = true;
+                    state.dragStart = { x: e.clientX, y: e.clientY };
+                    selectionBox.style.display = 'block';
+                    selectionBox.style.left = `${e.clientX}px`;
+                    selectionBox.style.top = `${e.clientY}px`;
+                    selectionBox.style.width = '0px';
+                    selectionBox.style.height = '0px';
                     return;
                 }
 
                 if (e.button === 0 || e.button === 1 || e.code === 'Space') {
                     state.isPanning = true;
                     state.dragStart = { x: e.clientX, y: e.clientY, px: state.panX, py: state.panY };
-                    deselectAll();
+                    setSelection([]);
                 }
             });
 
@@ -1423,12 +1908,24 @@
                 const worldY = (e.clientY - state.panY) / state.zoom;
 
                 if (nodeEl) {
-                    selectNode(nodeEl.id);
-                    showContextMenu(e.clientX, e.clientY, [
-                        { icon: icons.duplicate, label: 'Duplicar bloco', action: () => actions.duplicateNode(nodeEl.id) },
+                    if (!state.selectedNodeIds.has(nodeEl.id)) setSelection([nodeEl.id]);
+                    const multi = state.selectedNodeIds.size > 1;
+                    const items = [
+                        { icon: icons.duplicate, label: 'Duplicar', action: () => actions.duplicateNode(nodeEl.id) },
+                        { icon: icons.copy, label: 'Copiar (Ctrl+C)', action: () => actions.copySelection() },
                         'separator',
-                        { icon: icons.delete, label: 'Excluir bloco', danger: true, action: () => actions.deleteNode(nodeEl.id) }
-                    ]);
+                        { icon: icons.front, label: 'Trazer para frente', action: () => actions.bringToFront(nodeEl.id) },
+                        { icon: icons.back, label: 'Enviar para trás', action: () => actions.sendToBack(nodeEl.id) },
+                        'separator'
+                    ];
+                    if (multi) {
+                        items.push({ icon: icons.group, label: 'Agrupar', action: () => actions.groupSelection() });
+                        items.push({ icon: icons.ungroup, label: 'Desagrupar', action: () => actions.ungroupSelection() });
+                        items.push({ icon: icons.align, label: 'Alinhar à esquerda', action: () => actions.align('left') });
+                        items.push('separator');
+                    }
+                    items.push({ icon: icons.delete, label: multi ? 'Excluir selecionados' : 'Excluir bloco', danger: true, action: () => actions.deleteSelection() });
+                    showContextMenu(e.clientX, e.clientY, items);
                 } else {
                     showContextMenu(e.clientX, e.clientY, [
                         { icon: icons.add, label: 'Novo bloco aqui', action: () => actions.createNode(worldX, worldY) },
@@ -1458,17 +1955,27 @@
                     state.panY = state.dragStart.py + dy;
                     updateTransform();
                 }
+                else if (state.isRubberBand) {
+                    const x1 = Math.min(state.dragStart.x, e.clientX);
+                    const y1 = Math.min(state.dragStart.y, e.clientY);
+                    const w = Math.abs(e.clientX - state.dragStart.x);
+                    const h = Math.abs(e.clientY - state.dragStart.y);
+                    selectionBox.style.left = `${x1}px`;
+                    selectionBox.style.top = `${y1}px`;
+                    selectionBox.style.width = `${w}px`;
+                    selectionBox.style.height = `${h}px`;
+                }
                 else if (state.isDraggingNode) {
                     const dx = (e.clientX - state.dragStart.x) / state.zoom;
                     const dy = (e.clientY - state.dragStart.y) / state.zoom;
-                    const nodeData = state.nodes.find(n => n.id === state.draggedNodeId);
 
-                    nodeData.x = state.dragStart.nx + dx;
-                    nodeData.y = state.dragStart.ny + dy;
-
-                    const el = document.getElementById(state.draggedNodeId);
-                    el.style.left = `${nodeData.x + 50000}px`;
-                    el.style.top = `${nodeData.y + 50000}px`;
+                    Object.keys(state.dragSetStart).forEach(id => {
+                        const n = state.nodes.find(nn => nn.id === id);
+                        const startPos = state.dragSetStart[id];
+                        n.x = snap(startPos.x + dx);
+                        n.y = snap(startPos.y + dy);
+                        dom.updateNodePosition(n);
+                    });
 
                     renderConnections();
                     updateMinimap();
@@ -1477,13 +1984,34 @@
                     const dx = (e.clientX - state.dragStart.x) / state.zoom;
                     const dy = (e.clientY - state.dragStart.y) / state.zoom;
                     const nodeData = state.nodes.find(n => n.id === state.draggedNodeId);
+                    const dir = state.resizeDir;
 
-                    nodeData.width = Math.max(150, state.dragStart.w + dx);
-                    nodeData.height = Math.max(80, state.dragStart.h + dy);
+                    if (dir === 'se') {
+                        nodeData.width = Math.max(90, snap(state.dragStart.w + dx));
+                        nodeData.height = Math.max(70, snap(state.dragStart.h + dy));
+                    } else if (dir === 'sw') {
+                        const newW = Math.max(90, snap(state.dragStart.w - dx));
+                        nodeData.x = snap(state.dragStart.nx + (state.dragStart.w - newW));
+                        nodeData.width = newW;
+                        nodeData.height = Math.max(70, snap(state.dragStart.h + dy));
+                    } else if (dir === 'ne') {
+                        const newH = Math.max(70, snap(state.dragStart.h - dy));
+                        nodeData.y = snap(state.dragStart.ny + (state.dragStart.h - newH));
+                        nodeData.height = newH;
+                        nodeData.width = Math.max(90, snap(state.dragStart.w + dx));
+                    } else if (dir === 'nw') {
+                        const newW = Math.max(90, snap(state.dragStart.w - dx));
+                        const newH = Math.max(70, snap(state.dragStart.h - dy));
+                        nodeData.x = snap(state.dragStart.nx + (state.dragStart.w - newW));
+                        nodeData.y = snap(state.dragStart.ny + (state.dragStart.h - newH));
+                        nodeData.width = newW;
+                        nodeData.height = newH;
+                    }
 
                     const el = document.getElementById(state.draggedNodeId);
                     el.style.width = `${nodeData.width}px`;
                     el.style.height = `${nodeData.height}px`;
+                    dom.updateNodePosition(nodeData);
 
                     renderConnections();
                 }
@@ -1495,12 +2023,27 @@
                     if (targetNode && targetNode.id !== state.linkSourceId) {
                         const exists = state.connections.some(c => c.from === state.linkSourceId && c.to === targetNode.id);
                         if (!exists) {
-                            state.connections.push({ from: state.linkSourceId, to: targetNode.id });
+                            state.connections.push({ from: state.linkSourceId, to: targetNode.id, arrowEnd: true, arrowStart: false });
                             renderConnections();
                             saveHistory();
                         }
                     }
                     document.querySelectorAll('.connect-dot').forEach(d => d.classList.remove('linking'));
+                }
+
+                if (state.isRubberBand) {
+                    const rect = selectionBox.getBoundingClientRect();
+                    const wx1 = (rect.left - state.panX) / state.zoom;
+                    const wy1 = (rect.top - state.panY) / state.zoom;
+                    const wx2 = (rect.right - state.panX) / state.zoom;
+                    const wy2 = (rect.bottom - state.panY) / state.zoom;
+
+                    const hit = state.nodes.filter(n =>
+                        n.x < wx2 && n.x + n.width > wx1 && n.y < wy2 && n.y + n.height > wy1
+                    ).map(n => n.id);
+
+                    if (hit.length) setSelection(hit);
+                    selectionBox.style.display = 'none';
                 }
 
                 if (state.isDraggingNode || state.isResizingNode) {
@@ -1511,6 +2054,7 @@
                 state.isDraggingNode = false;
                 state.isResizingNode = false;
                 state.isLinking = false;
+                state.isRubberBand = false;
             });
 
             viewport.addEventListener('wheel', (e) => {
@@ -1537,8 +2081,8 @@
             window.addEventListener('keydown', (e) => {
                 if (document.activeElement.getAttribute('contenteditable') === 'true' || document.activeElement.tagName === 'INPUT') return;
 
-                if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedNodeId) {
-                    actions.deleteNode(state.selectedNodeId);
+                if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedNodeIds.size > 0) {
+                    actions.deleteSelection();
                 }
                 if (e.ctrlKey && e.key.toLowerCase() === 'z') {
                     e.preventDefault();
@@ -1548,8 +2092,21 @@
                     e.preventDefault();
                     actions.redo();
                 }
-                if (e.ctrlKey && e.key.toLowerCase() === 'c' && state.selectedNodeId) {
-                    actions.duplicateNode(state.selectedNodeId);
+                if (e.ctrlKey && e.key.toLowerCase() === 'c') {
+                    e.preventDefault();
+                    actions.copySelection();
+                }
+                if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+                    e.preventDefault();
+                    actions.pasteClipboard();
+                }
+                if (e.ctrlKey && e.key.toLowerCase() === 'g') {
+                    e.preventDefault();
+                    if (e.shiftKey) actions.ungroupSelection(); else actions.groupSelection();
+                }
+                if (e.ctrlKey && e.key.toLowerCase() === 'a') {
+                    e.preventDefault();
+                    setSelection(state.nodes.map(n => n.id));
                 }
                 if (!e.ctrlKey && !e.metaKey && e.key.toLowerCase() === 'n') {
                     e.preventDefault();
@@ -1558,6 +2115,7 @@
                 if (e.key === 'Escape') {
                     closeContextMenu();
                     document.querySelectorAll('.color-popover').forEach(p => p.remove());
+                    setSelection([]);
                 }
             });
 
@@ -1577,16 +2135,34 @@
             });
         }
 
-        function selectNode(id) {
-            deselectAll();
-            state.selectedNodeId = id;
-            const el = document.getElementById(id);
-            if (el) el.classList.add('selected');
+        function toggleNodeSelection(id) {
+            if (state.selectedNodeIds.has(id)) {
+                state.selectedNodeIds.delete(id);
+            } else {
+                state.selectedNodeIds.add(id);
+            }
+            syncSelectionClasses();
+            updateAlignToolbar();
         }
 
-        function deselectAll() {
-            state.selectedNodeId = null;
-            document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+        function setSelection(ids) {
+            state.selectedNodeIds = new Set(ids);
+            syncSelectionClasses();
+            updateAlignToolbar();
+        }
+
+        function syncSelectionClasses() {
+            document.querySelectorAll('.node').forEach(el => {
+                el.classList.toggle('selected', state.selectedNodeIds.has(el.id));
+            });
+            const count = state.selectedNodeIds.size;
+            const wrap = document.getElementById('selection-count-wrap');
+            document.getElementById('selection-count').textContent = count;
+            wrap.style.display = count > 0 ? 'inline' : 'none';
+        }
+
+        function updateAlignToolbar() {
+            alignToolbar.classList.toggle('visible', state.selectedNodeIds.size >= 2);
         }
 
         function updateMetrics() {
@@ -1651,7 +2227,15 @@
             add: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
             fit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>',
             duplicate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
-            delete: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+            delete: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+            copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+            front: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="12" height="12" rx="2"/><path d="M4 15V5a2 2 0 0 1 2-2h10"/></svg>',
+            back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="12" height="12" rx="2"/><path d="M20 9v10a2 2 0 0 1-2 2H8"/></svg>',
+            group: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M10 6h5a2 2 0 0 1 2 2v5"/></svg>',
+            ungroup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+            align: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="2" x2="4" y2="22"/><rect x="7" y="5" width="12" height="5"/></svg>',
+            edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
+            arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>'
         };
 
         function updateMinimap() {
@@ -1660,7 +2244,7 @@
             map.querySelectorAll('.minimap-dot').forEach(d => d.remove());
 
             const mapW = 130, mapH = 84;
-            const worldSpan = 4000; // world units represented across the minimap
+            const worldSpan = 4000;
             const scale = mapW / worldSpan;
 
             state.nodes.forEach(n => {
@@ -1706,3 +2290,4 @@
     </script>
 </body>
 </html>
+HTMLEOF

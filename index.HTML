@@ -489,7 +489,7 @@
     </div>
 
     <div id="top-bar" class="ui-panel">
-        <div class="logo">INFINITEMIND</div>
+        <div class="logo">CHOROLLOBOARD</div>
         <input type="text" id="search-box" class="search-input" placeholder="Pesquisar blocos...">
         <button class="btn" onclick="actions.exportJSON()">Exportar JSON</button>
         <button class="btn" onclick="document.getElementById('import-file').click()">Importar</button>
@@ -706,7 +706,7 @@
                 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({nodes: state.nodes, connections: state.connections}));
                 const downloadAnchor = document.createElement('a');
                 downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", "infinite_mind_board.json");
+                downloadAnchor.setAttribute("download", "chorolloboard.json");
                 document.body.appendChild(downloadAnchor);
                 downloadAnchor.click();
                 downloadAnchor.remove();
@@ -1029,13 +1029,13 @@
         }
 
         function saveToLocalStorage() {
-            localStorage.setItem('infinite_mind_nodes', JSON.stringify(state.nodes));
-            localStorage.setItem('infinite_mind_connections', JSON.stringify(state.connections));
+            localStorage.setItem('chorolloboard_nodes', JSON.stringify(state.nodes));
+            localStorage.setItem('chorolloboard_connections', JSON.stringify(state.connections));
         }
 
         function loadFromLocalStorage() {
-            const savedNodes = localStorage.getItem('infinite_mind_nodes');
-            const savedConns = localStorage.getItem('infinite_mind_connections');
+            const savedNodes = localStorage.getItem('chorolloboard_nodes');
+            const savedConns = localStorage.getItem('chorolloboard_connections');
             if (savedNodes) {
                 state.nodes = JSON.parse(savedNodes);
                 state.nodes.forEach(n => dom.renderNode(n));
